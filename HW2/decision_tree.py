@@ -186,12 +186,12 @@ def determine_candidate_splits(data):
 
         np.sort(data, axis=0)  # sort by feature value
         for i in range(len(features)-1):
-            if features[i][-1] != features[i + 1][-1]:
+            if features[i][-1] != features[i + 1][-1] and features[i][0] != features[i+1][0]:
                 # maybe generalize? only works for binary classification
                 want_higher = features[i][-1] == 0  # T/F 1 is higher
                 feature_splits.append(np.array([feature, (features[i][0] + features[i + 1][0]) / 2, want_higher]))
         all_splits.append(np.array(feature_splits))
-    return np.array(all_splits)
+    return all_splits
 
 
 def should_stop(data, c):
