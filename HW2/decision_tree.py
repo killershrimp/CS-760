@@ -8,6 +8,8 @@ import numpy as np
 
 default_class = 1
 
+# todo add pruning?
+
 
 class Node:
     left = None
@@ -137,7 +139,7 @@ def total_cond_entropy(all_data, split):
     """
     rv = 0
     h_given_x = entropy_given_x(all_data, split)
-    rv -= p_split(all_data[:, :split[0], split[0] + 1], split) * h_given_x
+    rv -= p_split(all_data[:, split[0]], split) * h_given_x
     return rv
 
 
@@ -152,9 +154,18 @@ def info_gain(all_data, split):
 
 
 def gain_ratio(all_data, split):
-    if entropy_given_x(all_data, split) == 0:
+    # split data by parts and then sum todo generalize beyond binary?
+    parts = [[], []]
+    for entry in all_data:
+        if entry[-1] == 0:
+            parts[0].append(entry)
+        else:
+            parts[1].append(entry)
+
+    sum_entropy_given_x = -entropy_given_x(np.array(parts[0]), split) - entropy_given_x(np.array(parts[1]), split)
+    if sum_entropy_given_x == 0:
         return 0
-    return info_gain(all_data, split) / entropy_given_x(all_data, split)  # todo check denominator
+    return info_gain(all_data, split) / sum_entropy_given_x
 
 
 # todo integrate split entropy/gain ratio into split class and cache for later function use

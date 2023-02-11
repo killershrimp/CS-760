@@ -1,5 +1,4 @@
-import numpy as np
-
+import random
 from decision_tree import *
 
 
@@ -14,6 +13,7 @@ def read_data(filename):
 
 
 def split_data_evenly(dataset):
+    random.shuffle(dataset)
     train = dataset[:int(len(dataset) / 2)]
     test = dataset[int(len(dataset) / 2):]
     return train, test
