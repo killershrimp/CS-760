@@ -8,6 +8,7 @@ import numpy as np
 
 default_class = 1
 
+
 # todo add pruning?
 
 
@@ -64,24 +65,30 @@ def eval_split(value, split):
         return value[int(split[0])] < split[1]
 
 
+def invert_split(split):
+    rv = split.copy()
+    rv[2] = 1 - split[2]
+    return rv
+
+
 def p_y(d, y):
     """
     Returns the frequency of some output value in the dataset
     """
-    return np.count_nonzero(d[:-1] == y)
+    return np.count_nonzero(d == y) / len(d)
 
 
 def p_split(d, split):
     """
     Returns the frequency of split
-    :param d: nx1 vector only containing specific feature
+    :param d: n full-feature inputs
     :param split: 1x3 vector: [feature index, split threshold, boolean is_up]
     """
     count = 0
     for i in d:
         if eval_split(i, split):
             count += 1
-    return count
+    return count / len(d)
 
 
 def p_conditional(d, split, val2):
@@ -89,13 +96,18 @@ def p_conditional(d, split, val2):
     :param d: all input instances in the form [one specific feature, output]
     :param split: 1x3 vector: [feature index, split threshold, boolean is_up]
     :param val2: desired output value
-    :return: frequency of split and value2 in the entire dataset
+    :return: frequency of value2 given split in the entire dataset
     """
     count = 0
+    denom = 0
     for i in d:
-        if eval_split(i, split) and i[1] == val2:
-            count += 1
-    return count
+        if eval_split(i, split):
+            denom += 1
+            if i[-1] == val2:
+                count += 1
+    if denom == 0:
+        return 0
+    return count / denom
 
 
 def entropy_y(all_data):
@@ -104,9 +116,11 @@ def entropy_y(all_data):
     :return: entropy of label
     """
     rv = 0
-    ys = np.unique[all_data[:-1]]
+    ys = np.unique(all_data[:, -1])
     for y in ys:
-        p = p_y(all_data, y)
+        p = p_y(all_data[:, -1], y)
+        if p == 0:
+            return 0
         rv -= p * math.log2(p)
     return rv
 
@@ -118,15 +132,10 @@ def entropy_given_x(all_data, split):
     :return: entropy given feature value
     """
     h_given_x = 0
-    for y in np.unique(all_data[-1]):
-        trimmed_d = np.concatenate(
-            (all_data[:, int(split[0])].reshape(len(all_data), 1), all_data[:,-1].reshape(len(all_data), 1)),
-            axis=1)  # #manscaped #ad
-
-        a = p_conditional(trimmed_d, split, y)
-        if a == 0:
-            return 0
-        h_given_x += p_y(trimmed_d, y) * math.log2(a)  # todo check signs
+    for y in np.unique(all_data[:, -1]):
+        denom = p_conditional(all_data, split, y)
+        if denom != 0:
+            h_given_x += denom * math.log2(denom)
     return h_given_x
 
 
@@ -137,9 +146,8 @@ def total_cond_entropy(all_data, split):
      [feature index, split threshold, boolean is_up]
     :return H(Y | X = x_i). entropy given a split
     """
-    rv = 0
-    h_given_x = entropy_given_x(all_data, split)
-    rv -= p_split(all_data[:, split[0]], split) * h_given_x
+    rv = -p_split(all_data, split) * entropy_given_x(all_data, split) \
+         - p_split(all_data, invert_split(split)) * entropy_given_x(all_data, invert_split(split))
     return rv
 
 
@@ -154,18 +162,13 @@ def info_gain(all_data, split):
 
 
 def gain_ratio(all_data, split):
-    # split data by parts and then sum todo generalize beyond binary?
-    parts = [[], []]
-    for entry in all_data:
-        if entry[-1] == 0:
-            parts[0].append(entry)
-        else:
-            parts[1].append(entry)
-
-    sum_entropy_given_x = -entropy_given_x(np.array(parts[0]), split) - entropy_given_x(np.array(parts[1]), split)
-    if sum_entropy_given_x == 0:
+    # todo generalize beyond binary?
+    a = p_split(all_data, split)
+    b = p_split(all_data, invert_split(split))
+    denom = - math.log2(a) * a - math.log2(b) * b
+    if denom == 0:
         return 0
-    return info_gain(all_data, split) / sum_entropy_given_x
+    return info_gain(all_data, split) / denom
 
 
 # todo integrate split entropy/gain ratio into split class and cache for later function use
@@ -177,8 +180,6 @@ def determine_candidate_splits(data):
     num_features = len(data[0]) - 1  # max number of features
     all_splits = []
     for feature in range(num_features):
-        feature_splits = []
-
         # feature + result
         features = np.concatenate(
             (data[:, feature].reshape(len(data), 1), data[:, -1].reshape(len(data), 1)),
@@ -187,10 +188,9 @@ def determine_candidate_splits(data):
         np.sort(data, axis=0)  # sort by feature value
         for i in range(len(features)-1):
             if features[i][-1] != features[i + 1][-1] and features[i][0] != features[i+1][0]:
-                # maybe generalize? only works for binary classification
+                # todo maybe generalize beyond binary class
                 want_higher = features[i][-1] == 0  # T/F 1 is higher
-                feature_splits.append(np.array([feature, (features[i][0] + features[i + 1][0]) / 2, want_higher]))
-        all_splits.append(np.array(feature_splits))
+                all_splits.append(np.array([feature, (features[i][0] + features[i + 1][0]) / 2, want_higher]))
     return all_splits
 
 
@@ -227,10 +227,10 @@ def get_label(data):
         if entry[-1] == 0:
             counts[0] += 1
         else:
-            counts[1] +=1
+            counts[1] += 1
     if counts[0] > counts[1]:
         return 0
-    else:   # when no majority default to 1
+    else:  # when no majority default to 1
         return default_class
 
 
@@ -311,4 +311,3 @@ def test_subtree(data, parent):
             tests_passed += 1
 
     return tests_passed / len(data)
-
