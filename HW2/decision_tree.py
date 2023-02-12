@@ -191,7 +191,7 @@ def determine_candidate_splits(data):
                 # todo maybe generalize beyond binary class
                 want_higher = features[i][-1] == 0  # T/F 1 is higher
                 all_splits.append(np.array([feature, (features[i][0] + features[i + 1][0]) / 2, want_higher]))
-    return all_splits
+    return np.array(all_splits)
 
 
 def should_stop(data, c):
@@ -209,12 +209,9 @@ def should_stop(data, c):
 
     # checks both if gain is 0 or entropy is 0
     all_gain_zero = True
-    for feature in c:
-        for split in feature:
-            if gain_ratio(data, split) != 0:
-                all_gain_zero = False
-                break
-        if not all_gain_zero:
+    for split in c:
+        if gain_ratio(data, split) != 0:
+            all_gain_zero = False
             break
     if all_gain_zero:
         return True
@@ -243,12 +240,11 @@ def find_best_split(all_data, splits):
     """
     r_split = splits[0]
     r_gain = gain_ratio(all_data, r_split)
-    for feature_splits in range(len(splits)):
-        for split in splits[feature_splits]:
-            n_gain = gain_ratio(all_data, split)
-            if n_gain > r_gain:
-                r_gain = n_gain
-                r_split = split
+    for split in splits[1:]:
+        n_gain = gain_ratio(all_data, split)
+        if n_gain > r_gain:
+            r_gain = n_gain
+            r_split = split
     r1, r2 = split_by(all_data, r_split)
     return r1, r2, r_split
 
@@ -265,7 +261,7 @@ def split_by(data, split):
             r1.append(i)
         else:
             r2.append(i)
-    return r1, r2
+    return np.array(r1), np.array(r2)
 
 
 def make_subtree(data):
