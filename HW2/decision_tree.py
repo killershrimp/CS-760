@@ -36,11 +36,14 @@ class Node:
     def set_left(self, value):
         self.left = value
 
+    def get_split(self):
+        return self.split
+
     def eval_split(self, value):
         return eval_split(value, self.split)
 
 
-class Leaf():
+class Leaf:
     value = None
 
     def __init__(self, value):
@@ -307,3 +310,18 @@ def test_subtree(data, parent):
             tests_passed += 1
 
     return tests_passed / len(data)
+
+
+def print_subtree(node, index=0):
+    index_s = "(Index " + str(index) + ")"
+    if type(node) == Leaf:
+        print(index_s, "Leaf with label: ", node.get())
+        return  
+    feature_s = str(int(node.get_split()[0])) + ")"
+    print(index_s, "Split (feature", feature_s, ":",
+          ("greater" if node.get_split()[2] else "less"), "than", node.get_split()[1],
+          "(see index " + str(2 * index + 1) + ");",
+          ("less" if node.get_split()[2] else "greater"), "(see index " + str(2 * index + 2) + ")")
+
+    print_subtree(node.get_left(), 2 * index + 1)
+    print_subtree(node.get_right(), 2 * index + 2)
