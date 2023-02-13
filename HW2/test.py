@@ -1,31 +1,19 @@
-import random
-from decision_tree import *
-
-
-def read_data(filename):
-    all_data = []
-    with open(filename, "r") as file:
-        line = file.readline()
-        while line.rstrip() != "":
-            all_data.append(np.array([float(i) for i in line.split(" ")]))
-            line = file.readline()
-    return np.array(all_data)
-
-
-def split_data_evenly(dataset):
-    random.shuffle(dataset)
-    train = dataset[:int(len(dataset) / 2)]
-    test = dataset[int(len(dataset) / 2):]
-    return train, test
-
+import decision_tree
+import util
 
 inp_f = "data/D1.txt"
 
-data = read_data(inp_f)
-train, test = split_data_evenly(data)
+data = util.read_data(inp_f)
+train, test = util.split_data(data, 0.8192)
 
-DecisionTree = make_subtree(train)
+# for i in range(len(splits)):
+#     split = splits[i]
+#     print("\\item", str(int(split[0])) + "th feature;",
+#           ("high" if split[2] else "low") + "er than", str(split[1])
+#           + "; gain ratio:", gain_ratio(data, split))
 
-accuracy = test_subtree(test, DecisionTree)
+DecisionTree = decision_tree.make_subtree(data)
+
+accuracy = decision_tree.test_subtree(data, DecisionTree)
 print("Accuracy:", accuracy)
-
+print("done training")

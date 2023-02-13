@@ -316,7 +316,7 @@ def print_subtree(node, index=0):
     index_s = "(Index " + str(index) + ")"
     if type(node) == Leaf:
         print(index_s, "Leaf with label: ", node.get())
-        return  
+        return
     feature_s = str(int(node.get_split()[0])) + ")"
     print(index_s, "Split (feature", feature_s, ":",
           ("greater" if node.get_split()[2] else "less"), "than", node.get_split()[1],
@@ -325,3 +325,9 @@ def print_subtree(node, index=0):
 
     print_subtree(node.get_left(), 2 * index + 1)
     print_subtree(node.get_right(), 2 * index + 2)
+
+
+def count_nodes(root):
+    if type(root) == Leaf:
+        return 1
+    return count_nodes(root.get_left()) + count_nodes(root.get_right()) + 1
