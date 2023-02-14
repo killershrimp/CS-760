@@ -14,9 +14,10 @@ def read_data(filename):
 
 
 def split_data(dataset, train_size=0.5):
-    random.shuffle(dataset)
-    train = dataset[:int(len(dataset) * train_size)]
-    test = dataset[int(len(dataset) * train_size):]
+    copy = dataset.copy()
+    random.shuffle(copy)
+    train = copy[:int(len(copy) * train_size)]
+    test = copy[int(len(copy) * train_size):]
     return train, test
 
 

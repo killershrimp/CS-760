@@ -168,7 +168,11 @@ def gain_ratio(all_data, split):
     # todo generalize beyond binary?
     a = p_split(all_data, split)
     b = p_split(all_data, invert_split(split))
-    denom = - math.log2(a) * a - math.log2(b) * b
+    denom = 0
+    if a != 0:
+        denom += -math.log2(a) * a
+    if b != 0:
+        denom += -math.log2(b) * b
     if denom == 0:
         return 0
     return info_gain(all_data, split) / denom
@@ -188,12 +192,20 @@ def determine_candidate_splits(data):
             (data[:, feature].reshape(len(data), 1), data[:, -1].reshape(len(data), 1)),
             axis=1)
 
-        np.sort(data, axis=0)  # sort by feature value
+        features = np.sort(features, axis=0)  # sort by feature value
         for i in range(len(features)-1):
             if features[i][-1] != features[i + 1][-1] and features[i][0] != features[i+1][0]:
                 # todo maybe generalize beyond binary class
                 want_higher = features[i][-1] == 0  # T/F 1 is higher
-                all_splits.append(np.array([feature, (features[i][0] + features[i + 1][0]) / 2, want_higher]))
+
+                # split between training set features
+                # all_splits.append(np.array([feature, (features[i][0] + features[i + 1][0]) / 2, want_higher]))
+
+                # split on features in training set
+                split = features[i][0]
+                if not want_higher:
+                    split = features[i+1][0]
+                all_splits.append(np.array([feature, split, want_higher]))
     return np.array(all_splits)
 
 
@@ -276,7 +288,6 @@ def make_subtree(data):
         n = Node(split)
         n.set_left(make_subtree(d1))
         n.set_right(make_subtree(d2))
-        make_subtree(d2)
         return n
 
 
@@ -315,13 +326,13 @@ def test_subtree(data, parent):
 def print_subtree(node, index=0):
     index_s = "(Index " + str(index) + ")"
     if type(node) == Leaf:
-        print(index_s, "Leaf with label: ", node.get())
+        print(index_s, "Leaf with label: ", node.get(), "\\\\")
         return
     feature_s = str(int(node.get_split()[0])) + ")"
     print(index_s, "Split (feature", feature_s, ":",
           ("greater" if node.get_split()[2] else "less"), "than", node.get_split()[1],
           "(see index " + str(2 * index + 1) + ");",
-          ("less" if node.get_split()[2] else "greater"), "(see index " + str(2 * index + 2) + ")")
+          ("less" if node.get_split()[2] else "greater"), "(see index " + str(2 * index + 2) + ")", "\\\\")
 
     print_subtree(node.get_left(), 2 * index + 1)
     print_subtree(node.get_right(), 2 * index + 2)
