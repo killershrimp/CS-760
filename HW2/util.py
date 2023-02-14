@@ -15,7 +15,7 @@ def read_data(filename):
 
 def split_data(dataset, train_size=0.5):
     copy = dataset.copy()
-    random.shuffle(copy)
+    np.random.shuffle(copy)
     train = copy[:int(len(copy) * train_size)]
     test = copy[int(len(copy) * train_size):]
     return train, test
