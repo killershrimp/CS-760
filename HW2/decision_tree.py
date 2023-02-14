@@ -16,11 +16,10 @@ class Node:
     left = None
     right = None
     split = None
-    is_leaf = False
 
     def __init__(self, split):
         """
-        :param split: 1x3 vector: [feature index, split threshold, boolean is_up]
+        :param split: 1x2 vector: [feature index, split threshold]
         """
         self.split = split
 
@@ -59,19 +58,10 @@ class Leaf:
 def eval_split(value, split):
     """
     :param value: input vector
-    :param split: 1x3 vector: [feature index, split threshold, boolean is_up]
+    :param split: 1x2 vector: [feature index, split threshold]
     :return: if split is above/below threshold
     """
-    if split[2]:
-        return value[int(split[0])] > split[1]
-    else:
-        return value[int(split[0])] < split[1]
-
-
-def invert_split(split):
-    rv = split.copy()
-    rv[2] = 1 - split[2]
-    return rv
+    return value[int(split[0])] >= split[1]
 
 
 def p_y(d, y):
@@ -85,7 +75,7 @@ def p_split(d, split):
     """
     Returns the frequency of split
     :param d: n full-feature inputs
-    :param split: 1x3 vector: [feature index, split threshold, boolean is_up]
+    :param split: 1x2 vector: [feature index, split threshold]
     """
     count = 0
     for i in d:
@@ -94,17 +84,17 @@ def p_split(d, split):
     return count / len(d)
 
 
-def p_conditional(d, split, val2):
+def p_conditional(d, split, val2, not_c=True):
     """
     :param d: all input instances in the form [one specific feature, output]
-    :param split: 1x3 vector: [feature index, split threshold, boolean is_up]
+    :param split: 1x2 vector: [feature index, split threshold]
     :param val2: desired output value
     :return: frequency of value2 given split in the entire dataset
     """
     count = 0
     denom = 0
     for i in d:
-        if eval_split(i, split):
+        if not (eval_split(i, split) ^ not_c):
             denom += 1
             if i[-1] == val2:
                 count += 1
@@ -128,15 +118,16 @@ def entropy_y(all_data):
     return rv
 
 
-def entropy_given_x(all_data, split):
+def entropy_given_x(all_data, split, not_c=True):
     """
     :param all_data: entire dataset
-    :param split: one specific feature split [feature index, split threshold, boolean is_up]
+    :param split: one specific feature split [feature index, split threshold]
+    :param not_c: want to use complement of split
     :return: entropy given feature value
     """
     h_given_x = 0
     for y in np.unique(all_data[:, -1]):
-        denom = p_conditional(all_data, split, y)
+        denom = p_conditional(all_data, split, y, not_c)
         if denom != 0:
             h_given_x += denom * math.log2(denom)
     return h_given_x
@@ -145,12 +136,16 @@ def entropy_given_x(all_data, split):
 def total_cond_entropy(all_data, split):
     """
     :param all_data: entire dataset
-    :param split: possible split as 1x3 vector with form
-     [feature index, split threshold, boolean is_up]
+    :param split: possible split as 1x2 vector with form
+     [feature index, split threshold]
     :return H(Y | X = x_i). entropy given a split
     """
-    rv = -p_split(all_data, split) * entropy_given_x(all_data, split) \
-         - p_split(all_data, invert_split(split)) * entropy_given_x(all_data, invert_split(split))
+
+    psplit = p_split(all_data, split)
+
+    a = -entropy_given_x(all_data, split)
+    b = -entropy_given_x(all_data, split, False)
+    rv = a * psplit + b * (1-psplit)
     return rv
 
 
@@ -158,16 +153,16 @@ def info_gain(all_data, split):
     """
     determines info gain on some feature
     :param all_data: all data
-    :param split: split to evaluate info gain of (1x3 vector: [feature index, split threshold, boolean is_up])
+    :param split: split to evaluate info gain of (1x2 vector: [feature index, split threshold])
     :return: info gain given split on feature
     """
-    return entropy_y(all_data) - total_cond_entropy(all_data, split)
+    rv = entropy_y(all_data) - total_cond_entropy(all_data, split)
+    return rv
 
 
 def gain_ratio(all_data, split):
-    # todo generalize beyond binary?
     a = p_split(all_data, split)
-    b = p_split(all_data, invert_split(split))
+    b = 1 - a
     denom = 0
     if a != 0:
         denom += -math.log2(a) * a
@@ -178,7 +173,6 @@ def gain_ratio(all_data, split):
     return info_gain(all_data, split) / denom
 
 
-# todo integrate split entropy/gain ratio into split class and cache for later function use
 def determine_candidate_splits(data):
     """
     Determine all candidate splits for given dataset. Only consider splits on single features
@@ -188,24 +182,16 @@ def determine_candidate_splits(data):
     all_splits = []
     for feature in range(num_features):
         # feature + result
-        features = np.concatenate(
-            (data[:, feature].reshape(len(data), 1), data[:, -1].reshape(len(data), 1)),
-            axis=1)
-
-        features = np.sort(features, axis=0)  # sort by feature value
+        features = data[:, feature]
+        features = np.sort(features)
         for i in range(len(features)-1):
-            if features[i][-1] != features[i + 1][-1] and features[i][0] != features[i+1][0]:
-                # todo maybe generalize beyond binary class
-                want_higher = features[i][-1] == 0  # T/F 1 is higher
-
+            if features[i] != features[i+1]:
                 # split between training set features
                 # all_splits.append(np.array([feature, (features[i][0] + features[i + 1][0]) / 2, want_higher]))
 
                 # split on features in training set
-                split = features[i][0]
-                if not want_higher:
-                    split = features[i+1][0]
-                all_splits.append(np.array([feature, split, want_higher]))
+                split = features[i+1]
+                all_splits.append(np.array([feature, split]))
     return np.array(all_splits)
 
 
@@ -329,10 +315,9 @@ def print_subtree(node, index=0):
         print(index_s, "Leaf with label: ", node.get(), "\\\\")
         return
     feature_s = str(int(node.get_split()[0])) + ")"
-    print(index_s, "Split (feature", feature_s, ":",
-          ("greater" if node.get_split()[2] else "less"), "than", node.get_split()[1],
+    print(index_s, "Split (feature", feature_s, " greater than or eq. to", node.get_split()[1],
           "(see index " + str(2 * index + 1) + ");",
-          ("less" if node.get_split()[2] else "greater"), "(see index " + str(2 * index + 2) + ")", "\\\\")
+          "less than, (see index " + str(2 * index + 2) + ")", "\\\\")
 
     print_subtree(node.get_left(), 2 * index + 1)
     print_subtree(node.get_right(), 2 * index + 2)

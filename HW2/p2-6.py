@@ -19,7 +19,19 @@ for data in matroyshka:
     nodes = decision_tree.count_nodes(DT)
     learning_curve.append([nodes, 1 - decision_tree.test_subtree(test, DT)])
     print(len(data), nodes)
-    util.plot_data(data)
+    max_x = np.max(test[:,0])
+    max_y = np.max(test[:,1])
+    min_x = np.min(test[:,0])
+    min_y = np.min(test[:,1])
+    x = np.linspace(min_x, max_x, 100)
+    y = np.linspace(min_y, max_y, 100)
+
+    train_error = []
+    for x_ in x:
+        for y_ in y:
+            train_error.append([x_, y_, decision_tree.classify(DT, [x_, y_])])
+
+    util.plot_data(train_error)
 
     # sklearn
     # SK_DT = tree.DecisionTreeClassifier()
