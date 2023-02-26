@@ -2,7 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 data = []
-with open("t_data.txt", "r") as f:
+with open("data.txt", "r") as f:
 	x = f.readline().rstrip().split(" ")
 	while len(x) == 2:
 		if len(x) != 0:
