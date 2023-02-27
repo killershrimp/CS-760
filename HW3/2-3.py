@@ -11,7 +11,7 @@ words, emails = util.read_emails()
 
 np.random.shuffle(emails)
 
-# util.cv_five(LR, emails)
+util.cv_five(LR, emails)
 
 
 # FOR TUNING LEARN RATE/EPOCHS

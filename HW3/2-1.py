@@ -33,7 +33,6 @@ x_12 = np.linspace(-2, 2, int(4 / 0.1))
 y_12 = x_12.copy()
 r_0 = []
 r_1 = []
-# r_0 = [nn1.predict(np.array([x_12[i], y_12[i]]).reshape(1, -1)) for i in range(len(x_12))]
 
 for i in x_12:
     for j in y_12:
