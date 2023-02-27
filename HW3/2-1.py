@@ -2,7 +2,6 @@ from sklearn.neighbors import KNeighborsClassifier
 import numpy as np
 import matplotlib.pyplot as plt
 
-color_train = 'b'
 train_x_0 = []
 train_x_1 = []
 train_y_0 = []
