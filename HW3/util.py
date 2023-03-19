@@ -84,10 +84,10 @@ def cv_five(model, emails):
         test_s = 1000 * i
         test_e = 1000 * (i + 1)
 
-        test_x = emails[test_s: test_e, 0: n_feat]
-        test_y = emails[test_s: test_e, -1]
+        test_x = emails[test_s:test_e, :n_feat]
+        test_y = emails[test_s:test_e, -1]
 
-        train_x = np.concatenate([emails[test_e:, 0:n_feat], emails[0:test_s, 0:n_feat]])
+        train_x = np.concatenate([emails[test_e:, 0:n_feat], emails[0:test_s, :n_feat]])
         train_y = np.concatenate([emails[test_e:, -1], emails[0:test_s, -1]])
 
         model.fit(train_x, train_y)
