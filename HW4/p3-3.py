@@ -5,6 +5,9 @@ from torch.utils.data import DataLoader
 from torchvision import datasets
 from torchvision.transforms import ToTensor
 
+import matplotlib.pyplot as plt
+import numpy as np
+
 k_batch_size = 64
 k_di = 28*28
 k_d1 = 300
@@ -60,7 +63,7 @@ def train_loop(dataloader, model, optimizer):
         #     print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
 
 
-def test_loop(dataloader, model):
+def test_loop(dataloader, model, epochs):
     size = len(dataloader.dataset)
     num_batches = len(dataloader)
     test_loss, correct = 0, 0
@@ -72,16 +75,27 @@ def test_loop(dataloader, model):
 
     test_loss /= num_batches
     correct /= size
+    learn_curve_acc.append([epochs,correct])
     print(f"Test Error: \n Accuracy: {(100*correct):>0.1f}%, Avg loss: {test_loss:>8f} \n")
 
 
 optimizer = torch.optim.SGD(model.parameters(), lr=k_lr)
 
+learn_curve_acc = []
+
 for t in range(k_epochs):
     print(f"Epoch {t+1}\n-------------------------------")
     train_loop(dl_train, model, optimizer)
-    test_loop(dl_test, model)
+    test_loop(dl_test, model, t)
 print("Done!")
+
+plt.title("Learning Curve for Pytorch NN with Batch Size " + str(k_batch_size))
+learn_curve_acc = np.array(learn_curve_acc)
+plt.plot(learn_curve_acc[:,0], learn_curve_acc[:,1])
+plt.xlabel("Epochs")
+plt.ylabel("Accuracy")
+plt.show()
+print("\n\n", learn_curve_acc)
 
 torch.save(model.state_dict(), 'pt_MNIST_model_weights.pth')
 
