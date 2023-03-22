@@ -14,8 +14,8 @@ k_d1 = 300
 k_d2 = 200
 k_d3 = 100
 k_df = 10
-k_epochs = 30
-k_lr = 5
+k_epochs = 15
+k_lr = 8
 
 d_train = datasets.MNIST(root="data", train=True, download=True, transform=ToTensor())
 d_test = datasets.MNIST(root="data", train=False, download=True, transform=ToTensor())
@@ -35,7 +35,23 @@ class NeuralNetwork(nn.Module):
             nn.Sigmoid(),
             nn.Linear(k_d2, k_df, True),
         )
+
+        # zero weight init
+        # self.stack.apply(self.zero_w_init)
+
+        # # random weight init
+        # self.stack.apply(self.random_w_init)
+
         self.loss_fn = nn.CrossEntropyLoss()
+
+    def random_w_init(self, layer):
+        if isinstance(layer, nn.Linear):
+            torch.nn.init.uniform_(layer.weight, -1, 1)
+
+    def zero_w_init(self, layer):
+        if isinstance(layer, nn.Linear):
+            torch.nn.init.zeros_(layer.weight)
+            layer.bias.data.fill_(0)
 
     def forward(self, x):
         x = self.flatten(x)
@@ -58,9 +74,9 @@ def train_loop(dataloader, model, optimizer):
         loss.backward()
         optimizer.step()
 
-        # if batch % 100 == 0:
-        #     loss, current = loss.item(), (batch + 1) * len(X)
-        #     print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
+        if batch % 100 == 0:
+            loss, current = loss.item(), (batch + 1) * len(X)
+            print(f"loss: {loss:>7f}  [{current:>5d}/{size:>5d}]")
 
 
 def test_loop(dataloader, model, epochs):
@@ -89,13 +105,14 @@ for t in range(k_epochs):
     test_loop(dl_test, model, t)
 print("Done!")
 
-plt.title("Learning Curve for Pytorch NN with Batch Size " + str(k_batch_size))
+plt.title("Learning Curve for NN with Batch Size " + str(k_batch_size))
 learn_curve_acc = np.array(learn_curve_acc)
 plt.plot(learn_curve_acc[:,0], learn_curve_acc[:,1])
 plt.xlabel("Epochs")
 plt.ylabel("Accuracy")
 plt.show()
 print("\n\n", learn_curve_acc)
+print("\n\n", (np.ones(len(learn_curve_acc)) - learn_curve_acc[:,1]))
 
 torch.save(model.state_dict(), 'pt_MNIST_model_weights.pth')
 

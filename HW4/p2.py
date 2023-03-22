@@ -29,7 +29,7 @@ print("\nProblem 2:")
 for i in range(3):
     f_index = i * 10
     data = d1_train[f_index:f_index+10]
-    a = [NB1.smooth_conditional(data, 'e', char) for char in util.k_S]
+    a = [NB1.smooth_conditional(data, util.k_L[i], char) for char in util.k_S]
     print(["{0:0.3f}".format(i) for i in a])
 
 # problem 3

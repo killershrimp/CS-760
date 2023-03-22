@@ -16,37 +16,52 @@ import numpy as np
 #
 # def gen_d_crossentropy(y_estimate, y_real):
 #     return - np.divide(y_real, y_estimate)
+import torch
+
 
 def gen_d_crossentropy_comp_softmax(y_est, y_real):
     return y_est - y_real
 
 
 def gen_d_sigmoid(x):
-    rv = np.zeros((len(x), len(x)))
-    for i in range(len(x)):
-        s = 1 / (1 + np.exp(-x[i]))
-        rv[i][i] = s * (1 - s)
-    return rv
+    s = sigmoid(x)
+    return s * (np.ones(np.shape(x)) - s)
 
 
-def gen_d_matrix(W, a):
+def gen_d_vecbymat(W, a):
     """
-    :return d(Wa)/dW where W is a matrix and a is a vector
+    :return d(Wa)/da where W is a matrix and a is a vector
     """
-    return np.repeat(a, np.shape(W)[0], axis=1)
+    # return np.repeat(a, np.shape(W)[0], axis=1)
+    return W
+
+k_clip_max = 19
+def clip(i):
+    """
+    Prevent overflow in sigmoid
+    :param i: original argument for sigmoid
+    :return: clipped value (no sigmoid applied)
+    """
+    return np.clip(i, -k_clip_max, k_clip_max)
 
 
 def sigmoid(x):
-    fn = np.vectorize(lambda i: 1 / (1 + np.exp(-i)))
-    return fn(x)
+    return torch.sigmoid(torch.from_numpy(x)).numpy()
+
+
+def _sigmoid(x):
+    x = clip(x)
+    if x >= 0:
+        return 1 / (1 + np.exp(-x))
+    return np.exp(x) / (1 + np.exp(x))
 
 
 def softmax(x):
-    return np.divide(np.exp(x), np.sum(np.exp(x)))
+    return torch.softmax(torch.from_numpy(x), dim=-1).numpy()
 
 
 def loss_crossentropy(y, y_pred):
-    return - np.sum(np.multiply(y, np.log(y_pred)))
+    return - np.log(y_pred[y])
 
 
 def get_one_hot(index, size):
