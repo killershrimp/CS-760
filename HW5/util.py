@@ -74,12 +74,9 @@ def DRO(X, d):
 
     U, S, V = np.linalg.svd(X_new)
 
-    S_1 = np.copy(S)
-    for i in range(d, len(S_1)):
-        S_1[i] = 0
-    A_1 = np.transpose(S_1 * V)
+    A_1 = S[:d] * V[:d].T
 
-    return np.transpose(S[:d] * V[:d]), (A_1, b), U[:,:d][:,np.newaxis] @ S[:d] * V[:d] + np.ones((n,1)) @ b.T
+    return U, (A_1, b), U[:,:d] @ np.transpose(S[:d] * V[:d].T) + np.ones((n,1)) @ b.T
 
 
 def recon_error(a, b):
